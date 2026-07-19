@@ -118,6 +118,24 @@ services:
       store:
         condition: service_healthy
 
+  worker:
+    build: ./worker
+    restart: unless-stopped
+    environment:
+      PORT: "8000"
+      LLM_BASE_URL: ${LLM_BASE_URL}
+      LLM_MODEL: ${LLM_MODEL}
+      LLM_API_KEY: ${LLM_API_KEY}
+      MONGO_URL: ${MONGO_URL}
+      SEED_BLOG_URL: ${SEED_BLOG_URL}
+    depends_on:
+      store:
+        condition: service_healthy
+      mock-llm:
+        condition: service_started
+      seed-blog:
+        condition: service_started
+
 volumes:
   n8n-data:
   store-data:

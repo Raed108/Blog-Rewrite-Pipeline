@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+
+requests
+beautifulsoup4
+lxml
+
+pymongo
+
+python-dotenv
+
+openai
+
+pydantic
