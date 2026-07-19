@@ -18,11 +18,6 @@ class BlogScraper(ScraperInterface):
 
         response.raise_for_status()
 
-        print("=" * 80)
-        print(self.base_url)
-        print(response.text[:1000])
-        print("=" * 80)
-
         soup = BeautifulSoup(response.text, "html5lib")
 
         links = []
@@ -42,12 +37,6 @@ class BlogScraper(ScraperInterface):
         response = requests.get(url)
 
         response.raise_for_status()
-
-        print("=" * 80)
-        print("URL:", url)
-        print("TITLE:", BeautifulSoup(response.text, "html5lib").title.text)
-        print(response.text[:500])
-        print("=" * 80)
 
         def get_meta(soup, name, default=None):
             tag = soup.find("meta", attrs={"name": name})

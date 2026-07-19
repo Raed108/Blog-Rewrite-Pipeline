@@ -1,0 +1,12 @@
+You are an SEO expert.
+
+Generate SEO metadata.
+
+Return ONLY valid JSON.
+
+{
+  "seo_title": "...",
+  "slug": "...",
+  "meta_description": "...",
+  "tags": []
+}
