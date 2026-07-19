@@ -1,0 +1,123 @@
+# Blog Rewrite Pipeline — starter stack.
+#
+# One command:  docker compose up
+#
+# Brings up the orchestrator (n8n), a store, the local sample blog, the
+# status/results endpoint (gateway), your MCP server, and a bundled local
+# language model. Only n8n (5678) and the gateway (8088) are published to
+# your machine; everything else talks over the internal compose network.
+#
+# You build ON this. Edit freely — add your pipeline, fill in the gateway and
+# the MCP server, wire the orchestrator. Keep the service names and ports
+# consistent so the pieces keep finding each other.
+
+name: blog-pipeline
+
+services:
+  # ── Orchestrator ─────────────────────────────────────────────────────────
+  # n8n. Ships a trigger-only workflow (workflow/blog-pipeline.trigger.json);
+  # extend it into your pipeline. UI at http://127.0.0.1:5678.
+  n8n:
+    image: n8nio/n8n:1.64.0
+    restart: unless-stopped
+    environment:
+      N8N_HOST: 127.0.0.1
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: http
+      N8N_SECURE_COOKIE: "false"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      GENERIC_TIMEZONE: Africa/Cairo
+      # The pipeline reads these from the environment. Do NOT hardcode keys.
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://mock-llm:8080/v1}
+      LLM_MODEL: ${LLM_MODEL:-mock-1}
+      LLM_API_KEY: ${LLM_API_KEY:-sk-local-mock}
+      MONGO_URL: ${MONGO_URL:-mongodb://store:27017/blog}
+      SEED_BLOG_URL: ${SEED_BLOG_URL:-http://seed-blog/}
+    ports:
+      - "127.0.0.1:5678:5678"
+    volumes:
+      - n8n-data:/home/node/.n8n
+      # Auto-imports the trigger workflow on first boot.
+      - ./workflow:/workflow:ro
+    depends_on:
+      store:
+        condition: service_healthy
+      seed-blog:
+        condition: service_started
+      mock-llm:
+        condition: service_started
+
+  # ── Store ────────────────────────────────────────────────────────────────
+  # MongoDB 7 by default. Swap it for another store if you prefer — just say so
+  # in REVIEW.md and update MONGO_URL / your pipeline accordingly.
+  store:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - store-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    # Not published — internal only.
+
+  # ── Sample blog (read-only web root) ─────────────────────────────────────
+  # Serves the sample posts at http://seed-blog/ on the internal network.
+  # Read only — process these posts, don't edit them.
+  seed-blog:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ../seed-fixture-agentic:/usr/share/nginx/html:ro
+    # Not published — internal only.
+
+  # ── Bundled language model ───────────────────────────────────────────────
+  # A small local, OpenAI-compatible model at /v1/chat/completions. The stack
+  # points at it by default so `docker compose up` works offline with no
+  # credentials and gives the same output every time. At grading time an env
+  # file may point LLM_BASE_URL at a different endpoint; read it from the env.
+  mock-llm:
+    build: ./mock-llm
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+    # Not published — internal only.
+
+  # ── MCP server (your code) ───────────────────────────────────────────────
+  # Placeholder that builds ./mcp-server. Replace with your own MCP server
+  # (Streamable HTTP transport) exposing tools over the pipeline and its store.
+  # Reachable at http://mcp:3002 on the internal network.
+  mcp:
+    build: ./mcp-server
+    restart: unless-stopped
+    environment:
+      PORT: "3002"
+      MONGO_URL: ${MONGO_URL:-mongodb://store:27017/blog}
+    depends_on:
+      store:
+        condition: service_healthy
+    # Not published — attach a client via the config in mcp-config.json.
+
+  # ── Status / results endpoint ────────────────────────────────────────────
+  # A small read-only service so the run can be seen from outside. Skeleton
+  # only — wire /articles, /runs, /run, /mcp/tools to your store and MCP
+  # server. Published at http://127.0.0.1:8088.
+  gateway:
+    build: ./gateway
+    restart: unless-stopped
+    environment:
+      PORT: "8088"
+      MONGO_URL: ${MONGO_URL:-mongodb://store:27017/blog}
+      MCP_URL: ${MCP_URL:-http://mcp:3002}
+    ports:
+      - "127.0.0.1:8088:8088"
+    depends_on:
+      store:
+        condition: service_healthy
+
+volumes:
+  n8n-data:
+  store-data:

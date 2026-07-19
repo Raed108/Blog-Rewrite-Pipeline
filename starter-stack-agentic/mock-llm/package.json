@@ -1,0 +1,14 @@
+{
+  "name": "blog-pipeline-mock-llm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bundled deterministic OpenAI-compatible language model so the stack runs offline. Not part of what you build.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}
