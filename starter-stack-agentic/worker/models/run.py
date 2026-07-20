@@ -16,4 +16,4 @@ class PipelineRun(BaseModel):
 
     finished_at: datetime | None = None
 
-    errors: list[str] = []
+    errors: list[str] = Field(default_factory=list)

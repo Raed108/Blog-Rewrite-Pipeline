@@ -13,6 +13,8 @@ class ProcessedArticle(BaseModel):
     author: str
     published_date: str
 
+    source_url: str
+
     original_body: str
     rewritten_body: str
     arabic_body: str

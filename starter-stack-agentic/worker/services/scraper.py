@@ -61,9 +61,6 @@ class BlogScraper(ScraperInterface):
             if title_tag:
                 title = title_tag.get_text().split("|")[0].strip()
 
-        for meta in soup.find_all("meta"):
-            print(meta)
-
         author = get_meta(soup, "author", "Unknown")
         published_date = get_meta(soup, "date", "Unknown")
         description = get_meta(soup, "description", "No description available")
