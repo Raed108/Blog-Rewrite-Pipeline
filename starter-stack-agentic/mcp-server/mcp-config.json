@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "blog-pipeline": {
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:3002/mcp"
+      }
+    }
+  }
+}

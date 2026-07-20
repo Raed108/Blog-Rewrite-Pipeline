@@ -96,6 +96,9 @@ services:
     environment:
       PORT: "3002"
       MONGO_URL: ${MONGO_URL:-mongodb://store:27017/blog}
+      WORKER_URL: http://worker:8000
+    ports:
+    - "3002:3002"
     depends_on:
       store:
         condition: service_healthy
@@ -128,10 +131,8 @@ services:
       LLM_API_KEY: ${LLM_API_KEY}
       MONGO_URL: ${MONGO_URL}
       SEED_BLOG_URL: ${SEED_BLOG_URL}
-
     ports:
     - "8000:8000"
-    
     depends_on:
       store:
         condition: service_healthy
