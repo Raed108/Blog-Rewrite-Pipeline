@@ -10,6 +10,11 @@
 // published port.
 
 import express from 'express';
+import { MongoClient } from "mongodb";
+import axios from "axios";
+import { listTools, callMcpTool } from "./services/mcp.js";
+
+
 
 const app = express();
 app.use(express.json());
@@ -17,10 +22,22 @@ app.use(express.json());
 const PORT = process.env.PORT || 8088;
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://store:27017/blog';
 const MCP_URL = process.env.MCP_URL || 'http://mcp:3002';
+const WORKER_URL = process.env.WORKER_URL || "http://worker:8000";
+
+const client = new MongoClient(MONGO_URL);
+await client.connect();
+const db = client.db();
+const articles = db.collection("articles");
+const runs = db.collection("runs");
 
 // GET /health — is the stack up. Returns 200 immediately; leave it working.
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok' });
+app.get("/health", (_,res)=>{
+
+    res.json({
+        status:"ok",
+        service:"gateway"
+    });
+
 });
 
 // GET /articles — the finished articles in the store, as JSON.
@@ -28,35 +45,74 @@ app.get('/health', (_req, res) => {
 // pipeline produced. One object per article; include the fields you store
 // (e.g. the English rewrite, the Arabic translation, the SEO metadata, and a
 // per-article status).
-app.get('/articles', async (_req, res) => {
-  // TODO: replace this stub with a real read from your store.
-  res.status(501).json({ error: 'not implemented', hint: `read articles from ${MONGO_URL}` });
+app.get("/articles", async (_, res) => {
+
+    const docs = await articles
+        .find({})
+        .project({_id:0})
+        .toArray();
+
+    res.json(docs);
+
 });
 
 // GET /runs — the status of each pipeline run.
 // TODO: return one entry per run. What you report per run is up to you — make
 // it useful enough to see what happened on each run.
-app.get('/runs', async (_req, res) => {
-  // TODO: replace this stub with your run history.
-  res.status(501).json({ error: 'not implemented', hint: 'report the status of each run' });
+app.get("/runs", async (_, res) => {
+
+    const docs = await runs
+        .find({})
+        .project({_id:0})
+        .toArray();
+
+    res.json(docs);
+
 });
 
 // POST /run — trigger a pipeline run.
 // TODO: kick off your orchestrator (e.g. call the n8n webhook, or start your
 // worker) so a run can be triggered without opening the n8n UI. Return
 // something that identifies the run you started.
-app.post('/run', async (_req, res) => {
-  // TODO: trigger your pipeline here.
-  res.status(501).json({ error: 'not implemented', hint: 'trigger a pipeline run' });
+app.post("/run", async (_, res) => {
+
+    try {
+
+        const response = await axios.post(
+            `${WORKER_URL}/run`
+        );
+
+        res.json(response.data);
+
+    } catch (err) {
+
+        res.status(500).json({
+            error:"Unable to start pipeline"
+        });
+
+    }
+
 });
 
 // GET /mcp/tools — the tools your MCP server exposes.
 // TODO: introspect your MCP server (MCP_URL) and return its tool list — the
 // names, descriptions, and input schemas — so the tools can be seen without
 // attaching a client.
-app.get('/mcp/tools', async (_req, res) => {
-  // TODO: replace this stub with a real read from your MCP server.
-  res.status(501).json({ error: 'not implemented', hint: `introspect the MCP server at ${MCP_URL}` });
+app.get("/mcp/tools", async (_, res) => {
+    try {
+        const tools = await listTools();
+        res.json(tools);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({
+            error: "Unable to fetch MCP tools"
+        });
+    }
+});
+
+app.get("/mcp/list_runs", async (_, res) => {
+    const result = await callMcpTool("list_runs");
+    res.json(result);
 });
 
 app.listen(PORT, () => {
