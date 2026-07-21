@@ -13,7 +13,7 @@ import express from 'express';
 import { MongoClient } from "mongodb";
 import axios from "axios";
 import { listTools, callMcpTool } from "./services/mcp.js";
-
+import { createProxyMiddleware } from "http-proxy-middleware";
 
 
 const app = express();
@@ -114,6 +114,23 @@ app.get("/mcp/list_runs", async (_, res) => {
     const result = await callMcpTool("list_runs");
     res.json(result);
 });
+
+
+/*
+|--------------------------------------------------------------------------
+| MCP Reverse Proxy
+|--------------------------------------------------------------------------
+*/
+
+app.use(
+    "/mcp",
+    createProxyMiddleware({
+        target: MCP_URL,
+        changeOrigin: true,
+        ws: false,
+        logLevel: "debug"
+    })
+);
 
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console

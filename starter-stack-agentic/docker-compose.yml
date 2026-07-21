@@ -35,7 +35,7 @@ services:
       MONGO_URL: ${MONGO_URL:-mongodb://store:27017/blog}
       SEED_BLOG_URL: ${SEED_BLOG_URL:-http://seed-blog/}
     ports:
-      - "127.0.0.1:5678:5678"
+      - "5678:5678"
     volumes:
       - n8n-data:/home/node/.n8n
       # Auto-imports the trigger workflow on first boot.
@@ -68,10 +68,8 @@ services:
   # Serves the sample posts at http://seed-blog/ on the internal network.
   # Read only — process these posts, don't edit them.
   seed-blog:
-    image: nginx:1.27-alpine
+    build: ./seed-blog
     restart: unless-stopped
-    volumes:
-      - ../seed-fixture-agentic:/usr/share/nginx/html:ro
     # Not published — internal only.
 
   # ── Bundled language model ───────────────────────────────────────────────
@@ -97,8 +95,8 @@ services:
       PORT: "3002"
       MONGO_URL: ${MONGO_URL:-mongodb://store:27017/blog}
       WORKER_URL: http://worker:8000
-    ports:
-    - "3002:3002"
+    expose:
+    - "3002"
     depends_on:
       store:
         condition: service_healthy
@@ -116,7 +114,7 @@ services:
       MONGO_URL: ${MONGO_URL:-mongodb://store:27017/blog}
       MCP_URL: ${MCP_URL:-http://mcp:3002}
     ports:
-      - "127.0.0.1:8088:8088"
+      - "8088:8088"
     depends_on:
       store:
         condition: service_healthy
@@ -131,8 +129,8 @@ services:
       LLM_API_KEY: ${LLM_API_KEY}
       MONGO_URL: ${MONGO_URL}
       SEED_BLOG_URL: ${SEED_BLOG_URL}
-    ports:
-    - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       store:
         condition: service_healthy
