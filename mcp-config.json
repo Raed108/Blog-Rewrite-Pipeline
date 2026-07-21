@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "blog-pipeline": {
+      "transport": {
+        "type": "streamable-http",
+        "url": "https://mcp-production-9ed0.up.railway.app/mcp"
+      }
+    }
+  }
+}
