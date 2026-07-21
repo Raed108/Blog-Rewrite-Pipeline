@@ -43,7 +43,7 @@
               }
             }
           ],
-          "combinator": "and"
+          "combinator": "or"
         },
         "options": {}
       },
